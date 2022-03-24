@@ -1,7 +1,7 @@
 from django.http import HttpResponse, HttpResponseNotFound, Http404
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
 from .models import Women, Category
-
+from .forms import AddPostForm
 
 menu = [{'title': "О сайте", 'url_name': 'about'},
         {'title': "Добавить статью", 'url_name': 'add_page'},
@@ -42,7 +42,23 @@ def pageNotFound(request, exception):
 
 
 def addpage(request):
-    return HttpResponse('Add Page')
+    if request.method == 'POST':
+        form = AddPostForm(request.POST)
+        if form.is_valid():
+            # print(form.cleaned_data)
+            try:
+                Women.objects.create(**form.cleaned_data)
+                return redirect('home')
+            except:
+                form.add_error(None, "Error add article")
+    else:
+        form = AddPostForm()
+    context = {
+        'menu': menu,
+        'title': 'Add Page...',
+        'form': form,
+    }
+    return render(request, 'women/addpage.html', context=context)
 
 
 def contact(request):
@@ -53,8 +69,17 @@ def login(request):
     return HttpResponse('Login')
 
 
-def show_post(request, post_id):
-    return HttpResponse(f"Display the Article = {post_id}")
+def show_post(request, post_slug):
+    post = get_object_or_404(Women, pk=post_slug)
+
+    context = {
+        'post': post,
+        'menu': menu,
+        'title': post.title,
+        'cat_selected': post.cat_id,
+    }
+
+    return render(request, 'women/post.html', context=context)
 
 
 def show_category(request, cat_id):
